@@ -1,0 +1,168 @@
+{
+  "data_sources": {
+    "economic_calendar": {
+      "fxstreet": {
+        "enabled": true,
+        "url": "https://www.fxstreet.com/economic-calendar",
+        "update_frequency": "daily",
+        "priority": 1
+      },
+      "forexfactory": {
+        "enabled": true,
+        "url": "https://www.forexfactory.com/calendar.php",
+        "update_frequency": "daily",
+        "priority": 2
+      }
+    },
+    "news_sources": {
+      "bloomberg": {
+        "enabled": true,
+        "url": "https://www.bloomberg.com/markets/currencies",
+        "update_frequency": "hourly",
+        "priority": 1
+      },
+      "reuters": {
+        "enabled": true,
+        "url": "https://www.reuters.com/markets/currencies",
+        "update_frequency": "hourly",
+        "priority": 2
+      },
+      "lorettatrade": {
+        "enabled": false,
+        "url": "https://www.lorettatrade.com/news-feed",
+        "update_frequency": "realtime",
+        "priority": 3,
+        "cost": 25,
+        "currency": "USD"
+      }
+    }
+  },
+  "trading_config": {
+    "default_risk_reward_ratio": "1:2",
+    "max_position_size": 0.02,
+    "stop_loss_distance": 0.005,
+    "take_profit_distance": 0.01,
+    "min_confidence_threshold": "medium"
+  },
+  "economic_indicators": {
+    "high_impact": [
+      "NFP",
+      "CPI",
+      "Interest Rate Decision",
+      "GDP",
+      "Inflation Rate"
+    ],
+    "medium_impact": [
+      "Retail Sales",
+      "Employment",
+      "PMI",
+      "Housing Data",
+      "Consumer Confidence"
+    ],
+    "low_impact": [
+      "Balance of Trade",
+      "Manufacturing Orders",
+      "Business Inventories"
+    ]
+  },
+  "currency_mandates": {
+    "USD": {
+      "mandate": "dual",
+      "focus": ["inflation", "employment"],
+      "central_bank": "Federal Reserve"
+    },
+    "EUR": {
+      "mandate": "price_stability",
+      "focus": ["inflation"],
+      "central_bank": "European Central Bank"
+    },
+    "GBP": {
+      "mandate": "price_stability",
+      "focus": ["inflation"],
+      "central_bank": "Bank of England"
+    },
+    "JPY": {
+      "mandate": "price_stability",
+      "focus": ["inflation", "economic_growth"],
+      "central_bank": "Bank of Japan"
+    },
+    "AUD": {
+      "mandate": "price_stability",
+      "focus": ["inflation"],
+      "central_bank": "Reserve Bank of Australia"
+    },
+    "CAD": {
+      "mandate": "price_stability",
+      "focus": ["inflation"],
+      "central_bank": "Bank of Canada"
+    }
+  },
+  "correlations": {
+    "PPI_CPI": {
+      "strength": 0.85,
+      "confidence": "high",
+      "description": "Producer prices strongly predict consumer inflation",
+      "lead_time": "1 month"
+    },
+    "RetailSales_GDP": {
+      "strength": 0.78,
+      "confidence": "high",
+      "description": "Retail sales make up 60-70% of GDP",
+      "lead_time": "quarterly"
+    },
+    "ADP_NFP": {
+      "strength": 0.80,
+      "confidence": "high",
+      "description": "Private sector employment predicts NFP",
+      "lead_time": "3 days"
+    },
+    "Housing_DurableGoods": {
+      "strength": 0.65,
+      "confidence": "medium",
+      "description": "Housing activity correlates with durable goods",
+      "lead_time": "1 month"
+    }
+  },
+  "market_sessions": {
+    "sydney": {
+      "timezone": "Australia/Sydney",
+      "start_time": "05:00",
+      "end_time": "14:00",
+      "est_equivalent": "05:00 - 14:00 EST"
+    },
+    "tokyo": {
+      "timezone": "Asia/Tokyo",
+      "start_time": "19:00",
+      "end_time": "04:00",
+      "est_equivalent": "19:00 - 04:00 EST"
+    },
+    "london": {
+      "timezone": "Europe/London",
+      "start_time": "03:00",
+      "end_time": "12:00",
+      "est_equivalent": "03:00 - 12:00 EST"
+    },
+    "new_york": {
+      "timezone": "America/New_York",
+      "start_time": "08:00",
+      "end_time": "17:00",
+      "est_equivalent": "08:00 - 17:00 EST"
+    }
+  },
+  "session_overlaps": {
+    "high_liquidity": [
+      {
+        "sessions": ["london", "new_york"],
+        "time": "08:00 - 11:00 EST",
+        "liquidity": "very_high",
+        "pip_potential": "100-200"
+      },
+      {
+        "sessions": ["sydney", "tokyo"],
+        "time": "19:00 - 01:00 EST",
+        "liquidity": "medium",
+        "pip_potential": "50-100"
+      }
+    ]
+  }
+}

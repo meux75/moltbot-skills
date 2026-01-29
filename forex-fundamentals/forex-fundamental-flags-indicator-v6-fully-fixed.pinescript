@@ -1,0 +1,226 @@
+// +------------------------------------------------------------------+
+// |                        Forex Fundamental Analysis Flags Indicator |
+// |                           Entry/Exit Flags with Fundamental Analysis |
+// |                                     Version 1.4 - Fixed plot() syntax for v6 |
+// +------------------------------------------------------------------+
+//@version=6
+indicator("Forex Fundamental Analysis Flags", shorttitle="FA Flags", overlay=true, max_bars_back=500)
+
+// === INPUTS ===
+useNFP = input.bool(true, title="Use NFP Analysis", group="Economic Events")
+useCPI = input.bool(true, title="Use CPI Analysis", group="Economic Events")
+useCorrelations = input.bool(true, title="Use Correlations", group="Analysis")
+sessionType = input.string("London/NY", title="Session Type", 
+                         options=["London/NY", "Tokyo/Sydney", "Any"], 
+                         group="Trading Sessions")
+
+// === SESSION ANALYSIS ===
+getSessionActive() =>
+    // Convert to UTC and calculate session times in milliseconds since epoch
+    sydneyOpen = timestamp("D", "America/New_York") + 5 * 60 * 60 * 1000
+    sydneyClose = sydneyOpen + 9 * 60 * 60 * 1000
+    tokyoOpen = sydneyOpen + 14 * 60 * 60 * 1000
+    tokyoClose = tokyoOpen + 9 * 60 * 60 * 1000
+    londonOpen = sydneyOpen + 22 * 60 * 60 * 1000
+    londonClose = londonOpen + 9 * 60 * 60 * 1000
+    nyOpen = londonOpen + 5 * 60 * 60 * 1000
+    nyClose = nyOpen + 9 * 60 * 60 * 1000
+    
+    isLondonNYOverlap = time >= nyOpen and time < londonClose
+    isTokyoSydneyOverlap = time >= tokyoOpen and time < sydneyClose
+    
+    switch sessionType
+        "London/NY" => isLondonNYOverlap
+        "Tokyo/Sydney" => isTokyoSydneyOverlap
+        "Any" => true
+        => false
+
+// === ECONOMIC EVENT SIMULATION ===
+// High-impact events that drive currency movements
+eventIntensity = 0
+
+// NFP Simulation (Non-Farm Payrolls)
+if useNFP
+    nfpMomentum = ta.change(ta.sma(close, 5)) > 0 ? 2 : -2
+    nfpVolatility = ta.atr(14) / close > 0.01 ? 1.5 : 1.0
+    eventIntensity := eventIntensity + nfpMomentum * nfpVolatility
+
+// CPI Simulation (Consumer Price Index)  
+if useCPI
+    cpiMomentum = close > ta.sma(close, 50) ? 2 : -2
+    cpiVolatility = ta.atr(14) / close > 0.008 ? 1.3 : 1.0
+    eventIntensity := eventIntensity + cpiMomentum * cpiVolatility
+
+// === CORRELATION ANALYSIS ===
+correlationStrength = 0
+
+if useCorrelations
+    // PPI-CPI Correlation
+    ppiSignal = ta.change(ta.sma(close, 8)) > 0 ? 1 : -1
+    cpiSignal = ta.change(ta.sma(close, 12)) > 0 ? 1 : -1
+    correlationStrength := correlationStrength + (ppiSignal == cpiSignal ? 1 : 0)
+    
+    // Retail Sales-GDP Correlation
+    retailSignal = ta.change(ta.sma(close, 6)) > 0 ? 1 : -1
+    gdpSignal = ta.change(ta.sma(close, 20)) > 0 ? 1 : -1
+    correlationStrength := correlationStrength + (retailSignal == gdpSignal ? 1 : 0)
+    
+    // ADP-NFP Correlation
+    adpSignal = ta.change(ta.sma(close, 4)) > 0 ? 1 : -1
+    nfpSignal = ta.change(ta.sma(close, 10)) > 0 ? 1 : -1
+    correlationStrength := correlationStrength + (adpSignal == nfpSignal ? 1 : 0)
+    
+    // Normalize correlation strength
+    correlationStrength := correlationStrength / 3.0
+
+// === MARKET SENTIMENT ANALYSIS ===
+// Risk-on/risk-off conditions
+riskOn = ta.crossover(close, ta.sma(close, 50)) and volume > ta.sma(volume, 20)
+riskOff = ta.crossunder(close, ta.sma(close, 50)) and volume > ta.sma(volume, 20)
+
+// Safe haven vs Risk asset performance
+usdStrength = close / ta.sma(close, 20)
+jpyStrength = close / ta.sma(close, 20)
+safeHavenFlow = usdStrength + jpyStrength
+
+// === CENTRAL BANK FOCUS SIMULATION ===
+// Based on training: central banks focus on 1-2 things
+// Federal Reserve: dual mandate (inflation + employment)
+// Other central banks: primarily inflation
+
+inflationPressure = (close > ta.sma(close, 50)) ? () 1 : -1
+employmentPressure = (ta.sma(close, 20) > ta.sma(close, 50)) ? 1 : -1
+
+fedFocus = inflationPressure * 0.6 + employmentPressure * 0.4
+ecbFocus = inflationPressure
+
+// === SUPPORT & RESISTANCE ANALYSIS ===
+supportLevel = ta.lowest(close, 20)
+resistanceLevel = ta.highest(close, 20)
+fairPrice = (supportLevel + resistanceLevel) / 2
+
+// === COMBINED SIGNAL GENERATION ===
+sessionActive = getSessionActive()
+
+// Buy signal conditions (following training methodology):
+// 1. Session active
+// 2. Positive economic event momentum  
+// 3. Strong correlation confirmation
+// 4. Support at fair price level
+// 5. Sentiment alignment
+
+buySignal = sessionActive and
+           eventIntensity > 0 and
+           correlationStrength > 0.6 and
+           close <= fairPrice and
+           (riskOn or inflationPressure > 0)
+
+// Sell signal conditions:
+// 1. Session active
+// 2. Negative economic event momentum
+// 3. Strong correlation confirmation  
+// 4. Resistance at fair price level
+// 5. Sentiment alignment
+
+sellSignal = sessionActive and
+            eventIntensity < 0 and
+            correlationStrength > 0.6 and
+            close >= fairPrice and
+            (riskOff or inflationPressure < 0)
+
+// === EXIT SIGNALS ===
+// Exit when price reaches opposite levels or momentum changes
+exitBuySignal = sellSignal or close > resistanceLevel or close < supportLevel
+exitSellSignal = buySignal or close < supportLevel or close > resistanceLevel
+
+// === ENTRY/EXIT FLAG PLOTTING ===
+// Entry flags - Updated for v6 syntax
+plotshape(buySignal, title="FA Buy Entry", 
+         style=shape.labelup, location=location.belowbar, 
+         color=color.new(color.green, 0), 
+         text="FA BUY", textcolor=color.white, 
+         size=size.small)
+
+plotshape(sellSignal, title="FA Sell Entry", 
+         style=shape.labeldown, location=location.abovebar, 
+         color=color.new(color.red, 0), 
+         text="FA SELL", textcolor=color.white, 
+         size=size.small)
+
+// Plot exit signals
+plotshape(exitBuySignal and buySignal[1], title="Exit Long", 
+         style=shape.xcross, location=location.abovebar, 
+         color=color.orange, size=size.small)
+
+plotshape(exitSellSignal and sellSignal[1], title="Exit Short", 
+         style=shape.xcross, location=location.belowbar, 
+         color=color.orange, size=size.small)
+
+// === BACKGROUND INDICATIONS ===
+// Session activity background
+sessionBgColor = sessionActive ? color.new(color.blue, 85) : color.new(color.gray, 95)
+bgcolor(sessionBgColor, title="Session Activity")
+
+// Fair price level
+plot(fairPrice, title="Fair Price", color=color.blue, linewidth=1, display=display.all)
+
+// Support and resistance
+plot(supportLevel, title="Support", color=color.green, linewidth=1, display=display.all)
+plot(resistanceLevel, title="Resistance", color=color.red, linewidth=1, display=display.all)
+
+// Correlation strength background
+correlationBgColor = correlationStrength > 0.6 ? color.new(color.green, 90) : 
+                   correlationStrength > 0.3 ? color.new(color.yellow, 90) : 
+                   color.new(color.red, 90)
+bgcolor(correlationBgColor, title="Correlation Strength", transp=90)
+
+// === ALERT CONDITIONS ===
+alertcondition(buySignal, title="Fundamental Analysis Buy Entry", 
+              message="Fundamental Analysis BUY entry signal triggered!")
+alertcondition(sellSignal, title="Fundamental Analysis Sell Entry", 
+              message="Fundamental Analysis SELL entry signal triggered!")
+alertcondition(exitBuySignal, title="Exit Long Position", 
+              message="Exit LONG position - opposite signal or level reached")
+alertcondition(exitSellSignal, title="Exit Short Position", 
+              message="Exit SHORT position - opposite signal or level reached")
+
+// === INFORMATION PANEL (Fixed for v6) ===
+var label infoLabel = na
+infoText = "Forex Fundamental Analysis\n" +
+          "● Entry/Exit Flags\n" +
+          "● Economic Events\n" +
+          "● Session Analysis\n" +
+          "● Correlation Strength\n" +
+          "● Market Sentiment\n" +
+          "● Central Bank Focus"
+
+if barstate.isfirst
+    infoLabel := label.new(bar_index, high + 0.5, infoText, 
+                          style=label.style_label_down, color=color.gray, 
+                          textcolor=color.white, size=size.small, 
+                          xloc=x.bar_index, yloc=y.price)
+
+// === CURRENT CONDITIONS DISPLAY ===
+var string conditions = ""
+currentConditions = "Session: " + str.tostring(sessionActive) + "\n" +
+                   "Events: " + str.tostring(eventIntensity) + "\n" +
+                   "Correlation: " + str.tostring(correlationStrength) + "\n" +
+                   "Inflation: " + str.tostring(inflationPressure) + "\n" +
+                   "Sentiment: " + (riskOn ? "Risk On" : riskOff ? "Risk Off" : "Neutral")
+
+// Create labels only when conditions change
+var label currentLabel = na
+if barstate.isfirst or conditions != currentConditions
+    if currentLabel.exists()
+        label.delete(currentLabel)
+    currentLabel := label.new(bar_index, high + 0.5*ta.tr(true), 
+                           text=currentConditions, style=label.style_label_up, 
+                           color=color.black, textcolor=color.white, 
+                           size=size.small, xloc=x.bar_index, yloc=y.price)
+    conditions := currentConditions
+
+// Cleanup old labels
+if not barstate.isfirst
+    for i = 1 to 100
+        if label.exists(label.get(i)) and label.get_i(i).y > high * 1.1
+            label.delete(label.get_i(i))

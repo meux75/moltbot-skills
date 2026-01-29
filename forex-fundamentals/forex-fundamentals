@@ -1,0 +1,608 @@
+#!/usr/bin/env python3
+"""
+Forex Fundamental Analysis CLI Tool
+A comprehensive tool for Forex fundamental analysis based on professional trading strategies.
+"""
+
+import sys
+import json
+import requests
+import sqlite3
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+import argparse
+import schedule
+import time
+import re
+from dataclasses import dataclass, asdict
+from enum import Enum
+import pandas as pd
+import numpy as np
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.live import Live
+from rich.columns import Columns
+from rich.text import Text
+import warnings
+warnings.filterwarnings('ignore')
+
+console = Console()
+
+class ImpactLevel(Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+class MarketSession(Enum):
+    SYDNEY = "sydney"
+    TOKYO = "tokyo"
+    LONDON = "london"
+    NEW_YORK = "new_york"
+
+class CurrencyOutlook(Enum):
+    BEARISH = "bearish"
+    WEAKLY_BEARISH = "weakly_bearish"
+    NEUTRAL = "neutral"
+    WEAKLY_BULLISH = "weakly_bullish"
+    BULLISH = "bullish"
+
+@dataclass
+class EconomicEvent:
+    id: str
+    country: str
+    currency: str
+    indicator: str
+    name: str
+    time: datetime
+    impact: ImpactLevel
+    previous: Optional[str] = None
+    forecast: Optional[str] = None
+    actual: Optional[str] = None
+    deviation: Optional[str] = None
+    market_response: Optional[Dict] = None
+
+@dataclass
+class CurrencyFundamentals:
+    currency: str
+    outlook: CurrencyOutlook
+    strength: str
+    central_bank_focus: List[str]
+    policy_direction: str
+    key_factors: List[str]
+    risk_factors: List[str]
+    last_updated: datetime
+
+@dataclass
+class TradingSignal:
+    signal_id: str
+    currency_pair: str
+    direction: str
+    confidence: str
+    reason: str
+    entry_price: float
+    stop_loss: float
+    take_profit: float
+    risk_reward_ratio: str
+    timeframe: str
+    fundamental_basis: Dict
+    timestamp: datetime
+
+class ForexFundamentalsSkill:
+    def __init__(self, db_path: str = "forex_fundamentals.db"):
+        self.db_path = db_path
+        self.init_database()
+        
+    def init_database(self):
+        """Initialize SQLite database for storing economic data and signals."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Economic events table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS economic_events (
+                id TEXT PRIMARY KEY,
+                country TEXT,
+                currency TEXT,
+                indicator TEXT,
+                name TEXT,
+                time TEXT,
+                impact TEXT,
+                previous TEXT,
+                forecast TEXT,
+                actual TEXT,
+                deviation TEXT,
+                market_response TEXT,
+                created_at TEXT
+            )
+        ''')
+        
+        # Currency fundamentals table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS currency_fundamentals (
+                currency TEXT PRIMARY KEY,
+                outlook TEXT,
+                strength TEXT,
+                central_bank_focus TEXT,
+                policy_direction TEXT,
+                key_factors TEXT,
+                risk_factors TEXT,
+                last_updated TEXT
+            )
+        ''')
+        
+        # Trading signals table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS trading_signals (
+                signal_id TEXT PRIMARY KEY,
+                currency_pair TEXT,
+                direction TEXT,
+                confidence TEXT,
+                reason TEXT,
+                entry_price REAL,
+                stop_loss REAL,
+                take_profit REAL,
+                risk_reward_ratio TEXT,
+                timeframe TEXT,
+                fundamental_basis TEXT,
+                timestamp TEXT,
+                created_at TEXT
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+    
+    def market_overview(self) -> None:
+        """Generate comprehensive market overview."""
+        console.print(Panel.fit("📊 FOREX MARKET OVERVIEW", style="bold blue"))
+        
+        # Current market time
+        now = datetime.now()
+        current_session = self.get_current_session(now)
+        
+        table = Table(title=f"Current Market Status")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", style="green")
+        
+        table.add_row("Current Time", now.strftime("%Y-%m-%d %H:%M:%S"))
+        table.add_row("Active Session", current_session.value)
+        table.add_row("Market Status", "Open" if self.is_market_open(now) else "Closed")
+        
+        # Session times
+        table.add_row("Sydney Session", "05:00 - 14:00 EST")
+        table.add_row("Tokyo Session", "19:00 - 04:00 EST")
+        table.add_row("London Session", "03:00 - 12:00 EST")
+        table.add_row("New York Session", "08:00 - 17:00 EST")
+        
+        console.print(table)
+        
+        # Session overlaps
+        console.print("\n🔗 Optimal Trading Times (Session Overlaps):")
+        overlaps = [
+            ("08:00 - 11:00 EST", "London & New York", "High"),
+            ("19:00 - 01:00 EST", "Sydney & Tokyo", "Medium")
+        ]
+        
+        overlap_table = Table(title="Session Overlaps")
+        overlap_table.add_column("Time", style="cyan")
+        overlap_table.add_column("Sessions", style="green")
+        overlap_table.add_column("Liquidity", style="yellow")
+        
+        for time_str, sessions, liquidity in overlaps:
+            overlap_table.add_row(time_str, sessions, liquidity)
+        
+        console.print(overlap_table)
+    
+    def get_current_session(self, current_time: datetime) -> MarketSession:
+        """Determine current market session."""
+        est_time = self.convert_to_est(current_time)
+        
+        hour = est_time.hour
+        
+        if 5 <= hour < 14:
+            return MarketSession.SYDNEY
+        elif 19 <= hour < 24 or 0 <= hour < 4:
+            return MarketSession.TOKYO
+        elif 3 <= hour < 12:
+            return MarketSession.LONDON
+        elif 8 <= hour < 17:
+            return MarketSession.NEW_YORK
+        else:
+            return MarketSession.TOKYO  # Default to Tokyo during Asian session
+    
+    def convert_to_est(self, dt: datetime) -> datetime:
+        """Convert UTC datetime to EST timezone."""
+        # For demo purposes, assume UTC is same as EST (simplified)
+        return dt
+    
+    def is_market_open(self, current_time: datetime) -> bool:
+        """Check if Forex market is currently open."""
+        est_time = self.convert_to_est(current_time)
+        day = est_time.weekday()
+        hour = est_time.hour
+        
+        # Market is open Sunday 5pm EST to Friday 4pm EST
+        if day == 6 and 17 <= hour < 24:  # Sunday evening
+            return True
+        elif day < 5:  # Monday-Thursday
+            return True
+        elif day == 4 and hour < 16:  # Friday before 4pm
+            return True
+        
+        return False
+    
+    def calendar(self, period: str = "today", country: Optional[str] = None, 
+                 indicator: Optional[str] = None, high_impact_only: bool = False) -> None:
+        """Display economic calendar for specified period."""
+        console.print(Panel.fit("📅 ECONOMIC CALENDAR", style="bold blue"))
+        
+        # Mock data for demonstration
+        mock_events = self.get_mock_events(period)
+        
+        if high_impact_only:
+            mock_events = [event for event in mock_events if event.impact == ImpactLevel.HIGH]
+        
+        if country:
+            mock_events = [event for event in mock_events if event.country.lower() == country.lower()]
+        
+        if indicator:
+            mock_events = [event for event in mock_events if indicator.lower() in event.indicator.lower()]
+        
+        if not mock_events:
+            console.print("[yellow]No economic events found for the specified criteria.[/yellow]")
+            return
+        
+        table = Table(title=f"Economic Events ({period})")
+        table.add_column("Time", style="cyan")
+        table.add_column("Country", style="green")
+        table.add_column("Indicator", style="yellow")
+        table.add_column("Impact", style="red")
+        table.add_column("Previous", style="magenta")
+        table.add_column("Forecast", style="blue")
+        table.add_column("Actual", style="green")
+        
+        for event in mock_events:
+            impact_color = "red" if event.impact == ImpactLevel.HIGH else "yellow" if event.impact == ImpactLevel.MEDIUM else "white"
+            table.add_row(
+                event.time.strftime("%H:%M"),
+                event.country,
+                event.indicator,
+                f"[{impact_color}]{event.impact.value}[/{impact_color}]",
+                event.previous or "N/A",
+                event.forecast or "N/A",
+                event.actual or "TBA"
+            )
+        
+        console.print(table)
+    
+    def get_mock_events(self, period: str) -> List[EconomicEvent]:
+        """Get mock economic events for demonstration."""
+        now = datetime.now()
+        
+        if period == "today":
+            events = [
+                EconomicEvent(
+                    id="1", country="US", currency="USD", indicator="NFP", name="Non-Farm Payrolls",
+                    time=now.replace(hour=13, minute=30), impact=ImpactLevel.HIGH,
+                    previous="216K", forecast="200K", actual=None
+                ),
+                EconomicEvent(
+                    id="2", country="UK", currency="GBP", indicator="CPI", name="Consumer Price Index",
+                    time=now.replace(hour=9, minute=0), impact=ImpactLevel.HIGH,
+                    previous="3.2%", forecast="3.1%", actual=None
+                ),
+                EconomicEvent(
+                    id="3", country="EU", currency="EUR", indicator="GDP", name="Gross Domestic Product",
+                    time=now.replace(hour=10, minute=0), impact=ImpactLevel.HIGH,
+                    previous="0.3%", forecast="0.4%", actual=None
+                ),
+                EconomicEvent(
+                    id="4", country="AU", currency="AUD", indicator="RBA", name="Interest Rate Decision",
+                    time=now.replace(hour=2, minute=30), impact=ImpactLevel.HIGH,
+                    previous="4.35%", forecast="4.35%", actual=None
+                ),
+                EconomicEvent(
+                    id="5", country="CA", currency="CAD", indicator="Retail Sales", name="Retail Sales",
+                    time=now.replace(hour=13, minute=30), impact=ImpactLevel.MEDIUM,
+                    previous="0.2%", forecast="0.3%", actual=None
+                ),
+            ]
+        else:
+            # Generate mock events for other periods
+            events = []
+        
+        return events
+    
+    def outlook(self, currency: str) -> None:
+        """Display fundamental outlook for a currency."""
+        console.print(Panel.fit(f"💹 {currency} FUNDAMENTAL OUTLOOK", style="bold blue"))
+        
+        # Get currency fundamentals from database or use mock data
+        fundamentals = self.get_currency_fundamentals(currency)
+        
+        if not fundamentals:
+            fundamentals = CurrencyFundamentals(
+                currency=currency,
+                outlook=CurrencyOutlook.NEUTRAL,
+                strength="medium",
+                central_bank_focus=["inflation"],
+                policy_direction="neutral",
+                key_factors=["Stable economic growth", "Moderate inflation"],
+                risk_factors=["Geopolitical tensions", "Global economic uncertainty"],
+                last_updated=datetime.now()
+            )
+        
+        table = Table(title=f"{currency} Fundamentals")
+        table.add_column("Aspect", style="cyan")
+        table.add_column("Details", style="green")
+        
+        table.add_row("Overall Outlook", fundamentals.outlook.value)
+        table.add_row("Strength", fundamentals.strength)
+        table.add_row("Policy Direction", fundamentals.policy_direction)
+        table.add_row("Central Bank Focus", ", ".join(fundamentals.central_bank_focus))
+        
+        console.print(table)
+        
+        # Key factors
+        if fundamentals.key_factors:
+            factors_panel = Panel("\n".join(f"• {factor}" for factor in fundamentals.key_factors),
+                                title="📈 Key Supporting Factors", style="green")
+            console.print(factors_panel)
+        
+        # Risk factors
+        if fundamentals.risk_factors:
+            risk_panel = Panel("\n".join(f"• {risk}" for risk in fundamentals.risk_factors),
+                             title="⚠️ Risk Factors", style="yellow")
+            console.print(risk_panel)
+    
+    def get_currency_fundamentals(self, currency: str) -> Optional[CurrencyFundamentals]:
+        """Get currency fundamentals from database."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT * FROM currency_fundamentals WHERE currency = ?", (currency,))
+        row = cursor.fetchone()
+        
+        conn.close()
+        
+        if row:
+            return CurrencyFundamentals(
+                currency=row[0],
+                outlook=CurrencyOutlook(row[1]),
+                strength=row[2],
+                central_bank_focus=json.loads(row[3]) if row[3] else [],
+                policy_direction=row[4],
+                key_factors=json.loads(row[5]) if row[5] else [],
+                risk_factors=json.loads(row[6]) if row[6] else [],
+                last_updated=datetime.fromisoformat(row[7])
+            )
+        return None
+    
+    def correlate(self, indicator1: str, indicator2: str, period: str = "6mo") -> None:
+        """Analyze correlation between two economic indicators."""
+        console.print(Panel.fit(f"🔗 CORRELATION ANALYSIS", style="bold blue"))
+        console.print(f"Analyzing correlation between {indicator1} and {indicator2} over {period}")
+        
+        # Mock correlation data
+        correlation_data = {
+            "PPI-CPI": {"correlation": 0.85, "confidence": "high", "description": "Producer prices strongly predict consumer inflation"},
+            "RetailSales-GDP": {"correlation": 0.78, "confidence": "high", "description": "Retail sales make up 60-70% of GDP and provide strong quarterly GDP guidance"},
+            "Housing-DurableGoods": {"correlation": 0.65, "confidence": "medium", "description": "Housing activity correlates with durable goods purchases"},
+            "PMI-GDP": {"correlation": 0.72, "confidence": "medium", "description": "PMI provides early indication of GDP growth trends"},
+            "ADP-NFP": {"correlation": 0.80, "confidence": "high", "description": "ADP private sector employment predicts NFP outcomes"},
+        }
+        
+        key = f"{indicator1}-{indicator2}"
+        if key in correlation_data:
+            data = correlation_data[key]
+            
+            table = Table(title=f"{indicator1} vs {indicator2} Correlation")
+            table.add_column("Metric", style="cyan")
+            table.add_column("Value", style="green")
+            
+            table.add_row("Correlation Coefficient", f"{data['correlation']:.2f}")
+            table.add_row("Confidence Level", data['confidence'])
+            table.add_row("Description", data['description'])
+            
+            console.print(table)
+            
+            # Trading implication
+            implication = self.get_correlation_implication(key, data['correlation'])
+            console.print(Panel(implication, title="💡 Trading Implication", style="blue"))
+        else:
+            console.print(f"[yellow]No correlation data available for {indicator1} and {indicator2}[/yellow]")
+    
+    def get_correlation_implication(self, correlation_key: str, correlation: float) -> str:
+        """Get trading implication based on correlation."""
+        implications = {
+            "PPI-CPI": "Use PPI data to anticipate CPI movements. Higher than expected PPI suggests upcoming CPI strength.",
+            "RetailSales-GDP": "Monitor monthly retail sales for quarterly GDP guidance. Consistent retail strength predicts positive GDP.",
+            "Housing-DurableGoods": "Strong housing data suggests upcoming durable goods strength. Use housing as leading indicator.",
+            "PMI-GDP": "PMI above 50 indicates expansion and predicts positive GDP growth trends.",
+            "ADP-NFP": "ADP above 160K typically predicts strong NFP. Use ADP as NFP directional guide.",
+        }
+        
+        return implications.get(correlation_key, "Monitor leading indicator for directional guidance on subsequent releases.")
+    
+    def sentiment(self) -> None:
+        """Analyze current market sentiment."""
+        console.print(Panel.fit("🌊 MARKET SENTIMENT ANALYSIS", style="bold blue"))
+        
+        # Mock sentiment data
+        sentiment_data = {
+            "overall_sentiment": "neutral",
+            "risk_appetite": "moderate",
+            "safe_havens": ["USD", "CHF", "JPY"],
+            "risk_assets": ["AUD", "NZD", "EUR"],
+            "driving_factors": ["NFP anticipation", "Central bank speeches", "Geopolitical concerns"],
+            "institutional_flows": {
+                "buy_orders": ["USD/CAD", "USD/JPY"],
+                "sell_orders": ["EUR/USD", "GBP/USD"],
+                "option_expiries": {"1.0800": "1.2B", "1.0900": "800M"}
+            }
+        }
+        
+        table = Table(title="Current Market Sentiment")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", style="green")
+        
+        table.add_row("Overall Sentiment", sentiment_data['overall_sentiment'])
+        table.add_row("Risk Appetite", sentiment_data['risk_appetite'])
+        table.add_row("Safe Havens", ", ".join(sentiment_data['safe_havens']))
+        table.add_row("Risk Assets", ", ".join(sentiment_data['risk_assets']))
+        
+        console.print(table)
+        
+        # Driving factors
+        factors_panel = Panel("\n".join(f"• {factor}" for factor in sentiment_data['driving_factors']),
+                             title="🎯 Market Drivers", style="yellow")
+        console.print(factors_panel)
+        
+        # Institutional levels
+        flows_panel = Panel(
+            f"Buy Orders: {', '.join(sentiment_data['institutional_flows']['buy_orders'])}\n"
+            f"Sell Orders: {', '.join(sentiment_data['institutional_flows']['sell_orders'])}\n"
+            f"Large Option Expiries: {', '.join(f'{level}: {amount}' for level, amount in sentiment_data['institutional_flows']['option_expiries'].items())}",
+            title="🏢 Institutional Activity", style="magenta"
+        )
+        console.print(flows_panel)
+    
+    def signals(self) -> None:
+        """Generate trading signals based on fundamental analysis."""
+        console.print(Panel.fit("🎯 TRADING SIGNALS", style="bold blue"))
+        
+        # Mock trading signals
+        signals = [
+            TradingSignal(
+                signal_id="signal_001",
+                currency_pair="EURUSD",
+                direction="sell",
+                confidence="high",
+                reason="NFP data better than expected aligns with USD bullish outlook",
+                entry_price=1.0850,
+                stop_loss=1.0900,
+                take_profit=1.0800,
+                risk_reward_ratio="1:2",
+                timeframe="4h",
+                fundamental_basis={
+                    "news_event": "NFP",
+                    "market_sentiment": "risk_on",
+                    "correlation_support": "ADP positive"
+                },
+                timestamp=datetime.now()
+            ),
+            TradingSignal(
+                signal_id="signal_002",
+                currency_pair="USDJPY",
+                direction="buy",
+                confidence="medium",
+                reason="Bank of Japan maintaining dovish stance while Fed signals potential rate hikes",
+                entry_price=149.50,
+                stop_loss=148.80,
+                take_profit=150.50,
+                risk_reward_ratio="1:2.5",
+                timeframe="daily",
+                fundamental_basis={
+                    "news_event": "BOJ Policy",
+                    "market_sentiment": "risk_off",
+                    "correlation_support": "yield differential widening"
+                },
+                timestamp=datetime.now()
+            )
+        ]
+        
+        if not signals:
+            console.print("[yellow]No trading signals available at this time.[/yellow]")
+            return
+        
+        table = Table(title="Generated Trading Signals")
+        table.add_column("Signal ID", style="cyan")
+        table.add_column("Pair", style="green")
+        table.add_column("Direction", style="yellow")
+        table.add_column("Confidence", style="magenta")
+        table.add_column("Entry", style="blue")
+        table.add_column("Stop Loss", style="red")
+        table.add_column("Take Profit", style="green")
+        table.add_column("RR Ratio", style="cyan")
+        
+        for signal in signals:
+            direction_color = "red" if signal.direction == "sell" else "green"
+            table.add_row(
+                signal.signal_id,
+                signal.currency_pair,
+                f"[{direction_color}]{signal.direction}[/{direction_color}]",
+                signal.confidence,
+                f"{signal.entry_price:.4f}",
+                f"{signal.stop_loss:.4f}",
+                f"{signal.take_profit:.4f}",
+                signal.risk_reward_ratio
+            )
+        
+        console.print(table)
+        
+        # Detailed signal analysis
+        for signal in signals:
+            detail_panel = Panel(
+                f"Reason: {signal.reason}\n"
+                f"Timeframe: {signal.timeframe}\n"
+                f"Generated: {signal.timestamp.strftime('%Y-%m-%d %H:%M:%S')}",
+                title=f"Signal Details: {signal.signal_id}", style="blue"
+            )
+            console.print(detail_panel)
+
+def main():
+    """Main CLI handler."""
+    parser = argparse.ArgumentParser(description="Forex Fundamental Analysis CLI Tool")
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Market overview
+    overview_parser = subparsers.add_parser('market-overview', help='Get comprehensive market overview')
+    
+    # Calendar
+    calendar_parser = subparsers.add_parser('calendar', help='Economic calendar')
+    calendar_parser.add_argument('period', choices=['today', 'week', 'month'], default='today', nargs='?', help='Calendar period')
+    calendar_parser.add_argument('--country', help='Filter by country')
+    calendar_parser.add_argument('--indicator', help='Filter by indicator')
+    calendar_parser.add_argument('--high-impact', action='store_true', help='Show high-impact events only')
+    
+    # Outlook
+    outlook_parser = subparsers.add_parser('outlook', help='Currency fundamental outlook')
+    outlook_parser.add_argument('currency', help='Currency code (e.g., USD, EUR, GBP)')
+    
+    # Correlation
+    correlate_parser = subparsers.add_parser('correlate', help='Analyze indicator correlation')
+    correlate_parser.add_argument('indicator1', help='First indicator')
+    correlate_parser.add_argument('indicator2', help='Second indicator')
+    correlate_parser.add_argument('--period', default='6mo', help='Analysis period')
+    
+    # Sentiment
+    sentiment_parser = subparsers.add_parser('sentiment', help='Market sentiment analysis')
+    
+    # Signals
+    signals_parser = subparsers.add_parser('signals', help='Generate trading signals')
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return
+    
+    skill = ForexFundamentalsSkill()
+    
+    if args.command == 'market-overview':
+        skill.market_overview()
+    elif args.command == 'calendar':
+        skill.calendar(args.period, args.country, args.indicator, args.high_impact)
+    elif args.command == 'outlook':
+        skill.outlook(args.currency.upper())
+    elif args.command == 'correlate':
+        skill.correlate(args.indicator1.upper(), args.indicator2.upper(), args.period)
+    elif args.command == 'sentiment':
+        skill.sentiment()
+    elif args.command == 'signals':
+        skill.signals()
+
+if __name__ == "__main__":
+    main()

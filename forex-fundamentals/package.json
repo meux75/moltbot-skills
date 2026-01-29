@@ -1,0 +1,49 @@
+{
+  "name": "forex-fundamentals",
+  "version": "1.0.0",
+  "description": "Comprehensive Forex Fundamental Analysis CLI Tool",
+  "main": "forex-fundamentals",
+  "bin": {
+    "forex-fundamentals": "./forex-fundamentals"
+  },
+  "scripts": {
+    "start": "python forex-fundamentals",
+    "install": "pip install -r requirements.txt",
+    "test": "python -m pytest tests/"
+  },
+  "keywords": [
+    "forex",
+    "trading",
+    "fundamental-analysis",
+    "market-analysis",
+    "economic-indicators"
+  ],
+  "author": "Forex Fundamental Analysis Skill",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/clawdhub/forex-fundamentals"
+  },
+  "dependencies": {
+    "python": ">=3.8",
+    "pandas": ">=1.5.0",
+    "numpy": ">=1.21.0",
+    "requests": ">=2.28.0",
+    "beautifulsoup4": ">=4.11.0",
+    "schedule": ">=1.1.0",
+    "rich": ">=13.0.0"
+  },
+  "devDependencies": {
+    "pytest": ">=7.0.0",
+    "pytest-cov": ">=4.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "config": {
+    "data_path": "./data",
+    "cache_ttl": 3600,
+    "api_timeout": 30,
+    "max_retries": 3
+  }
+}
