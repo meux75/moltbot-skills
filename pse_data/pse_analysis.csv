@@ -1,0 +1,6 @@
+symbol,timestamp,current_price,vwap,price_vs_vwap,price_difference,data_source,status
+RCR,2026-01-28T07:10:56.155394,7.85,7.85,below,0.0,Investing.com/Demo,success
+BDO,2026-01-28T07:10:58.194534,7.85,7.85,below,0.0,Investing.com/Demo,success
+SMC,2026-01-28T07:11:00.237697,7.85,7.85,below,0.0,Investing.com/Demo,success
+JFC,2026-01-28T07:11:02.295491,7.85,7.85,below,0.0,Investing.com/Demo,success
+MEG,2026-01-28T07:11:04.337711,7.85,7.85,below,0.0,Investing.com/Demo,success
