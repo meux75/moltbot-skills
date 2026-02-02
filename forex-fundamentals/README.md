@@ -3,6 +3,8 @@
 # Overview
 This Pine Script implementation combines all the Forex fundamental analysis concepts from your training into actionable TradingView strategies and indicators. Based on professional trading methodology, it provides entry/exit signals based on economic events, session analysis, and correlations.
 
+**NEW**: Enhanced with comprehensive 5-major-US-indicator framework, central bank analysis, global economic interconnections, and professional trading methodology. See `ENHANCED_ANALYSIS_GUIDE.md` for detailed implementation.
+
 # Files Created
 
 ## 1. Main Strategy: forex-fundamental-analysis-strategy.pinescript

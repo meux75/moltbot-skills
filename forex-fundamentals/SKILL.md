@@ -10,27 +10,67 @@ A comprehensive skill for Forex fundamental analysis based on professional tradi
 - **Liquidity Analysis**: Track market participation levels
 
 ### 🏦 Central Bank Focus
-- **Mandate Tracking**: Price stability (primary), Employment (US Federal Reserve dual mandate)
-- **Policy Tools**: Interest rates, quantitative easing, price limits, forward guidance
-- **Language Analysis**: Central bank statements and policy signals
+- **Federal Reserve (FOMC)**: Dual mandate (price stability + employment), 8 meetings/year, 2% inflation target
+- **ECB (Governing Council)**: Price stability mandate, monthly meetings, <2% inflation target
+- **Bank of England (MPC)**: Price stability + sustainable growth, monthly meetings, ~2% inflation target
+- **Bank of Japan (MPC)**: Price stability, 1-2 meetings/month, export economy management
+- **SNB (Governing Board)**: Price stability, quarterly meetings, export economy management
+- **Bank of Canada (Governing Council)**: 1-3% inflation target, ~8 meetings/year
+- **RBA (Board)**: Price stability + prosperity, 11 meetings/year, 2-3% inflation target
+- **RBNZ (Governor)**: Price stability + exchange rate stability, 8 meetings/year
 
-### 📈 Economic Indicators
-- **High Impact**: NFP, CPI, Interest Rate Decisions
-- **Medium Impact**: Retail Sales, GDP, PMI
-- **Low Impact**: Balance of Trade, other secondary indicators
+### 📈 US Economic Indicators (5 Major)
+- **GDP (Gross Domestic Product)**: Total goods/services value, quarterly, lagging indicator
+  - Rising GDP → economic growth → inflation risk → potential rate hikes
+  - Negative correlation: rapid inflation → reduced demand → decreased GDP → rate cuts
+- **Non-Farm Payrolls**: Total employment excluding farm/government, monthly
+  - Headline number: 100K-250K typical job creation
+  - Average work week: Full employment indicator
+  - Average hourly earnings: Wage inflation predictor
+  - High employment → wage inflation → rate hike pressure
+- **Balance of Trade**: Exports - Imports, monthly ~$44B deficit for US
+  - Decreasing deficit = positive for USD (less money leaving economy)
+  - Increasing deficit = negative for USD (more money leaving economy)
+- **TICS (Treasury International Capital Survey)**: Foreign investment in US debt
+  - Covers monthly trade deficit = USD positive
+  - Exceeds trade deficit = USD strongly positive
+  - Fails to cover deficit = USD bearish
+- **Philly Fed Index**: Manufacturing expectations, leading PMI indicator
+  - Above 0 = positive for manufacturing = positive for USD
+  - Below 0 = negative for manufacturing = negative for USD
+
+### 🌍 Global Economic Indicators
+- **CPI (Consumer Price Index)**: Primary inflation metric, all central banks monitor closely
+- **Retail Sales**: Leading indicator for GDP correlation
+- **PMI (Purchasing Managers' Index)**: Manufacturing activity indicator
+- **Housing/Durable Goods**: Correlation for economic outlook
+- **Jobless Claims**: Leading unemployment indicator
 
 ### 🔗 Fundamental Correlations
-- **PPI → CPI**: Producer price index predicts consumer inflation
-- **Retail Sales → GDP**: Monthly retail data predicts quarterly GDP
-- **Housing → Durable Goods**: Home sales predict appliance purchases
-- **PMI → GDP**: Manufacturing index predicts economic growth
-- **ADP → NFP**: Private sector employment predicts non-farm payrolls
-- **Jobless Claims → Unemployment**: Weekly claims predict monthly unemployment
+- **GDP → Interest Rates**: Economic growth → inflation → rate hikes
+- **NFP → Wage Growth**: Employment levels → average hourly earnings → inflation
+- **Balance of Trade → Currency Value**: Trade deficit → currency weakness
+- **TICS → USD Strength**: Foreign investment → capital inflows → USD strength
+- **Philly Fed → PMI**: Manufacturing expectations predict PMI outcomes
+- **PPI → CPI**: Producer prices predict consumer inflation (0.85 correlation)
+- **Retail Sales → GDP**: Monthly data predicts quarterly GDP (0.78 correlation)
+- **ADP → NFP**: Private employment predicts non-farm payrolls (0.80 correlation)
+- **Oil Prices → Inflation**: Positive correlation, major input cost factor
 
 ### 📰 News Sources Integration
 - **Primary**: Bloomberg, FXStreet, ForexFactory
 - **Premium**: RanSquid, Lorettatrade ($25/month)
 - **Economic Calendars**: Automated tracking of upcoming releases
+- **Central Bank Communications**: FOMC, ECB, BoE statements and minutes
+
+### 🛢️ Commodity & Currency Correlations
+- **Commodity Currencies**: AUD, NZD positive correlation with commodities
+- **AUD → Gold**: Australia = 3rd largest gold producer
+- **NZD → Dairy**: Dairy exports significantly impact NZD
+- **CAD → Oil**: Canada = 14th largest oil producer, 85% exports to US
+- **Safe Havens**: JPY, CHF during political turmoil
+- **CHF → Gold**: 25% of Swiss money backed by gold
+- **JPY → Oil**: Japan imports most oil, negative correlation with oil prices
 
 ## Features
 
@@ -52,7 +92,7 @@ forex-fundamentals session-analysis
 forex-fundamentals calendar today
 
 # This week's events
-forex-fundamentals calendar week
+forex-fundamentals calendar week15,229.17
 
 # High-impact events only
 forex-fundamentals calendar high-impact
@@ -179,6 +219,35 @@ forex-fundamentals correlate RetailSales GDP --quarterly
 forex-fundamentals correlate Housing DurableGoods --monthly
 ```
 
+## Monetary Policy Tools
+
+### Central Bank Policy Instruments
+- **Interest Rates**: Primary tool for money supply control
+  - Higher rates = more expensive borrowing = reduced spending = lower inflation
+  - Lower rates = cheaper borrowing = increased spending = higher inflation
+- **Reserve Requirements**: Minimum cash banks must hold (not available for lending)
+  - Higher requirements = less money available for lending = tighter money supply
+  - Lower requirements = more money available for lending = looser money supply
+- **Open Market Operations**: Buy/sell bonds to regulate money supply
+  - Buying bonds = inject money = expand supply
+  - Selling bonds = withdraw money = contract supply
+
+### Key Interest Rates by Region
+- **United States**: 
+  - Fed Funds Rate: Interbank overnight lending rate
+  - Discount Rate: Emergency lending rate (higher than Fed Funds)
+- **Eurozone**:
+  - Main Refinancing Operations Rate: Primary interbank rate
+  - Deposit Facility Rate: Interest on surplus reserves
+  - Marginal Lending Facility Rate: Emergency lending rate
+
+### Market Impact Framework
+```
+Economic Data → Central Bank Assessment → Interest Rate Expectations → Currency Movement
+```
+- **Positive Data** → Growth/Inflation Concerns → Rate Hike Expectations → Currency Strength
+- **Negative Data** → Growth/Inflation Concerns → Rate Cut Expectations → Currency Weakness
+
 ## Data Models
 
 ### Economic Event Structure
@@ -198,7 +267,43 @@ forex-fundamentals correlate Housing DurableGoods --monthly
   "market_response": {
     "pip_move": 150,
     "duration": "2h",
-    "sentiment": "bullish"
+    "sentiment": "bullish",
+    "rate_outlook": "hawkish"
+  }
+}
+```
+
+### Currency Correlation Matrix
+```python
+{
+  "currency_correlations": {
+    "EURUSD": {"negative": "USDCHF", "correlation": -0.85},
+    "AUDUSD": {"positive": "NZDUSD", "correlation": 0.78},
+    "CAD": {"commodity": "oil", "correlation": 0.65},
+    "AUD": {"commodity": "gold", "correlation": 0.72},
+    "NZD": {"commodity": "dairy", "sensitivity": "high"},
+    "CHF": {"safe_haven": True, "gold_backed": 0.25},
+    "JPY": {"safe_haven": True, "oil_negative": True}
+  }
+}
+```
+
+### Oil Market Analysis
+```python
+{
+  "opec_influence": {
+    "production_share": 0.40,
+    "reserve_share": 0.80,
+    "middle_east_reserves": 0.85,
+    "impact": "production decisions drive global prices"
+  },
+  "key_importers": ["China", "United States", "Japan", "India"],
+  "price_factors": {
+    "supply": "US shale production, OPEC decisions",
+    "demand": "Chinese economy, energy efficiency",
+    "geopolitical": "Middle East stability, sanctions",
+    "futures": "hedging activity, speculation",
+    "seasonal": "winter heating, summer driving"
   }
 }
 ```
@@ -288,6 +393,57 @@ forex-fundamentals correlate Housing DurableGoods --monthly
 - Automated monitoring
 - Backtesting capabilities
 - Risk management tools
+
+### Phase 4: Enhanced Integration
+- Central bank mandate tracking system
+- Currency correlation matrix implementation
+- Oil market dynamics integration
+- Global economic interconnection analysis
+- Advanced monetary policy modeling
+- OPEC monitoring and alert system
+
+## Advanced Trading Strategies
+
+### Central Bank Policy Analysis
+```bash
+# Track central bank meetings and decisions
+forex-fundamentals central-bank meetings --fed
+forex-fundamentals central-bank mandate --ecb
+forex-fundamentals policy-signal --interpret dovish/hawkish
+
+# Analyze inflation targeting across central banks
+forex-fundamentals inflation-target --compare fed ecb boe
+```
+
+### Currency Correlation Trading
+```bash
+# Analyze currency correlations for trading opportunities
+forex-fundamentals correlation-trading --pairs EURUSD USDCHF
+forex-fundamentals commodity-currency --oil-analysis
+forex-fundamentals safe-haven-flow --turmoil-detection
+
+# Execute correlation-based trades
+forex-fundamentals execute-correlation --buy EURJPY --based EURUSD USDJPY
+```
+
+### Oil Market Integration
+```bash
+# Monitor OPEC decisions and impact
+forex-fundamentals opec-monitor --next-meeting
+forex-fundamentals oil-impact --currency CAD AUD
+
+# Analyze oil price correlations
+forex-fundamentals oil-correlation --global-factors
+```
+
+### Global Economic Interconnection
+```bash
+# Analyze China's impact on commodity currencies
+forex-fundamentals china-data --impact AUD NZD
+
+# Monitor US economic influence on global markets
+forex-fundamentals us-impact --global-trade-flows
+```
 
 ## Requirements
 
